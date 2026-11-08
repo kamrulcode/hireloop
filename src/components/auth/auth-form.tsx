@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Lock, Mail, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { ImageIcon, Lock, Mail, User } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -61,33 +63,49 @@ function Field({
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const isLogin = mode === "login";
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError(null);
 
     const formData = new FormData(e.currentTarget);
     const users = Object.fromEntries(formData.entries()) as Record<
       string,
       string
     >;
-    console.log(users);
 
-    if (isLogin) {
-      const { data, error } = await authClient.signIn.email({
-        email: users.email,
-        password: users.password,
-        callbackURL: "/",
-      });
-      console.log(data, error);
-    } else {
-      const { data, error } = await authClient.signUp.email({
-        name: users.name,
-        email: users.email,
-        password: users.password,
-        callbackURL: "/",
-      });
-      console.log(data, error);
+    try {
+      if (isLogin) {
+        const { error } = await authClient.signIn.email({
+          email: users.email,
+          password: users.password,
+          callbackURL: "/dashboard",
+        });
+        if (error) {
+          setError(error.message ?? "Sign in failed");
+          return;
+        }
+      } else {
+        const { error } = await authClient.signUp.email({
+          name: users.name,
+          email: users.email,
+          password: users.password,
+          image: users.image || undefined,
+          role: users.role,
+          callbackURL: "/dashboard",
+        });
+        if (error) {
+          setError(error.message ?? "Sign up failed");
+          return;
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      return;
     }
+    router.push("/dashboard");
   };
 
   return (
@@ -113,15 +131,40 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           {!isLogin && (
-            <Field
-              id="name"
-              label="Full name"
-              name="name"
-              icon={User}
-              type="text"
-              placeholder="Ada Lovelace"
-              autoComplete="name"
-            />
+            <>
+              <Field
+                id="name"
+                label="Full name"
+                name="name"
+                icon={User}
+                type="text"
+                placeholder="Ada Lovelace"
+                autoComplete="name"
+              />
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="role" className="text-sm font-medium text-zinc-200">
+                  I am a
+                </label>
+                <select
+                  id="role"
+                  name="role"
+                  defaultValue="seeker"
+                  className="h-10 rounded-lg border border-input bg-[#0d0d0d] px-3 text-sm text-white outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-[#0d0d0d]"
+                >
+                  <option value="seeker">Job Seeker</option>
+                  <option value="recruiter">Recruiter</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <Field
+                id="image"
+                label="Profile image URL (optional)"
+                name="image"
+                icon={ImageIcon}
+                type="url"
+                placeholder="https://example.com/avatar.jpg"
+              />
+            </>
           )}
           <Field
             id="email"
@@ -161,6 +204,12 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               />
             </div>
           </div>
+
+          {error && (
+            <p className="text-sm text-red-400" role="alert">
+              {error}
+            </p>
+          )}
 
           <Button
             type="submit"

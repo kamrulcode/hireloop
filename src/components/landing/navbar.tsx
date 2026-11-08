@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -33,7 +32,12 @@ export async function Navbar() {
         </nav>
 
         {user ? (
-          <p>{user?.name}</p>
+          <Link
+            href="/dashboard"
+            className="text-sm text-zinc-300 transition-colors hover:text-white"
+          >
+            {user?.name}
+          </Link>
         ) : (
           <div className="flex items-center gap-2">
             <Link

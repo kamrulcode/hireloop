@@ -12,4 +12,13 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  user: {
+    // "seeker" | "recruiter" | "admin" — set by the signup form, defaults to seeker.
+    additionalFields: {
+      role: {
+        type: "string",
+        defaultValue: "seeker",
+      },
+    },
+  },
 });
