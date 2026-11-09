@@ -17,8 +17,9 @@ export default async function DashboardPage() {
   const user = session.user;
   const role =
     (user as { role?: string }).role ?? "seeker";
+  const dashboardUser = { name: user.name, image: user.image };
 
-  if (role === "admin") return <AdminDashboard user={user} />;
-  if (role === "recruiter") return <RecruiterDashboard user={user} />;
-  return <SeekerDashboard user={user} />;
+  if (role === "admin") return <AdminDashboard user={dashboardUser} />;
+  if (role === "recruiter") return <RecruiterDashboard user={dashboardUser} />;
+  return <SeekerDashboard user={dashboardUser} />;
 }

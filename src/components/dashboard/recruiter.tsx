@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Bell,
   Briefcase,
@@ -104,7 +106,7 @@ export function RecruiterDashboard({ user }: { user: DashboardUser }) {
             <Bell className="size-5" />
             <span className="absolute -top-1 -right-1 size-2 rounded-full bg-red-500" />
           </button>
-          <div className="text-right">
+          <div className="hidden text-right sm:block">
             <p className="text-sm font-medium text-white">{user.name}</p>
             <p className="text-xs text-zinc-500">TechFlow Inc.</p>
           </div>

@@ -15,11 +15,13 @@ Single Next.js 16 App Router app — not a monorepo. Use **npm** (`package-lock.
 ## Commands
 
 - `npm run dev` — dev server (Turbopack). Also generates route types (see below).
-- `npm run lint` — ESLint 9 flat config (`eslint.config.mjs`), whole repo, no args.
+- `npm run lint` — ESLint 9 flat config (`eslint.config.mjs`), whole repo. Focused: `npm run lint -- src/app/page.tsx` (args pass through after `--`).
 - `npx tsc --noEmit` — typecheck. There is **no** `typecheck` script.
 - `npm run build` — production build. **Cold it can exceed 10 minutes** (Turbopack cache empty); warm ≈ 3 min — don't kill it early assuming it hung.
 
 Verification order before finishing a change: `npm run lint` → `npx tsc --noEmit`.
+
+`README.md` is untouched create-next-app boilerplate and **wrong** in places (says `app/page.tsx` instead of `src/app/page.tsx`, suggests yarn/pnpm/bun). Trust this file over it.
 
 Gotchas:
 
