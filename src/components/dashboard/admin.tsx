@@ -1,43 +1,95 @@
 "use client";
 
 import {
-  Bell,
   Briefcase,
   Building2,
   Calendar,
-  CircleHelp,
   CreditCard,
-  LayoutDashboard,
-  Settings,
   User,
   UserCheck,
-  Users,
 } from "lucide-react";
-import { Avatar, DashboardShell, type DashboardUser } from "@/components/dashboard/shell";
-import { Logo } from "@/components/logo";
-
-const navItems = [
-  { label: "Dashboard", icon: LayoutDashboard },
-  { label: "Users", icon: Users },
-  { label: "Companies", icon: Building2 },
-  { label: "Jobs", icon: Briefcase },
-  { label: "Payments", icon: CreditCard },
-  { label: "Settings", icon: Settings },
-];
+import { type DashboardUser } from "@/components/dashboard/shell";
+import { AdminLayout } from "@/components/dashboard/layouts";
 
 const stats = [
-  { label: "Total Users", value: "124,892", trend: "↑12%", up: true, icon: User },
-  { label: "Total Recruiters", value: "12,405", trend: "↑8%", up: true, icon: UserCheck },
-  { label: "Total Companies", value: "4,281", trend: "–0%", up: false, icon: Building2 },
-  { label: "Jobs Posted", value: "8,920", trend: "↑24%", up: true, icon: Briefcase },
-  { label: "Platform Revenue", value: "$245,800", trend: "↑18.5%", up: true, icon: CreditCard },
+  {
+    label: "Total Users",
+    value: "124,892",
+    trend: "↑12%",
+    up: true,
+    icon: User,
+  },
+  {
+    label: "Total Recruiters",
+    value: "12,405",
+    trend: "↑8%",
+    up: true,
+    icon: UserCheck,
+  },
+  {
+    label: "Total Companies",
+    value: "4,281",
+    trend: "–0%",
+    up: false,
+    icon: Building2,
+  },
+  {
+    label: "Jobs Posted",
+    value: "8,920",
+    trend: "↑24%",
+    up: true,
+    icon: Briefcase,
+  },
+  {
+    label: "Platform Revenue",
+    value: "$245,800",
+    trend: "↑18.5%",
+    up: true,
+    icon: CreditCard,
+  },
 ];
 
 const transactions = [
-  { email: "marcus.k@techcorp.io", company: "TechCorp Inc.", plan: "Enterprise Monthly", id: "#TXN-902341", amount: "$1,299.00", date: "Oct 24, 2023, 14:20", status: "Success", avatar: "bg-amber-700" },
-  { email: "sarah.l@creativestudio.com", company: "Creative Studio", plan: "Professional Annual", id: "#TXN-882103", amount: "$499.00", date: "Oct 24, 2023, 11:05", status: "Success", avatar: "bg-rose-600" },
-  { email: "j.doe@freelance.org", company: "Independent", plan: "Starter Monthly", id: "#TXN-774129", amount: "$49.00", date: "Oct 23, 2023, 16:45", status: "Pending", avatar: "bg-slate-600" },
-  { email: "admin@retailglobal.net", company: "Retail Global", plan: "Enterprise Monthly", id: "#TXN-552014", amount: "$1,299.00", date: "Oct 23, 2023, 09:12", status: "Failed", avatar: "bg-teal-600" },
+  {
+    email: "marcus.k@techcorp.io",
+    company: "TechCorp Inc.",
+    plan: "Enterprise Monthly",
+    id: "#TXN-902341",
+    amount: "$1,299.00",
+    date: "Oct 24, 2023, 14:20",
+    status: "Success",
+    avatar: "bg-amber-700",
+  },
+  {
+    email: "sarah.l@creativestudio.com",
+    company: "Creative Studio",
+    plan: "Professional Annual",
+    id: "#TXN-882103",
+    amount: "$499.00",
+    date: "Oct 24, 2023, 11:05",
+    status: "Success",
+    avatar: "bg-rose-600",
+  },
+  {
+    email: "j.doe@freelance.org",
+    company: "Independent",
+    plan: "Starter Monthly",
+    id: "#TXN-774129",
+    amount: "$49.00",
+    date: "Oct 23, 2023, 16:45",
+    status: "Pending",
+    avatar: "bg-slate-600",
+  },
+  {
+    email: "admin@retailglobal.net",
+    company: "Retail Global",
+    plan: "Enterprise Monthly",
+    id: "#TXN-552014",
+    amount: "$1,299.00",
+    date: "Oct 23, 2023, 09:12",
+    status: "Failed",
+    avatar: "bg-teal-600",
+  },
 ];
 
 const statusColors: Record<string, string> = {
@@ -48,38 +100,7 @@ const statusColors: Record<string, string> = {
 
 export function AdminDashboard({ user }: { user: DashboardUser }) {
   return (
-    <DashboardShell
-      brand={
-        <div>
-          <Logo />
-          <p className="text-xs text-zinc-500">Admin Console</p>
-        </div>
-      }
-      sidebarBottom={
-        <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-[#111] p-3">
-          <Avatar user={user} className="size-9 shrink-0" />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-white">
-              {user.name}
-            </p>
-            <p className="text-xs text-zinc-500">Super Admin</p>
-          </div>
-        </div>
-      }
-      navItems={navItems}
-      searchPlaceholder="Global search..."
-      topbarRight={
-        <>
-          <button type="button" aria-label="Notifications" className="relative text-zinc-400 hover:text-white">
-            <Bell className="size-5" />
-            <span className="absolute -top-1 -right-1 size-2 rounded-full bg-red-500" />
-          </button>
-          <button type="button" aria-label="Help" className="text-zinc-400 hover:text-white">
-            <CircleHelp className="size-5" />
-          </button>
-        </>
-      }
-    >
+    <AdminLayout user={user} searchPlaceholder="Global search...">
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -141,7 +162,7 @@ export function AdminDashboard({ user }: { user: DashboardUser }) {
             </a>
           </div>
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[860px] text-sm">
+            <table className="w-full min-w-215 text-sm">
               <thead>
                 <tr className="border-y border-white/10 text-left text-xs tracking-wider text-zinc-500 uppercase">
                   <th className="px-5 py-3.5 font-medium">User/Recruiter</th>
@@ -208,6 +229,6 @@ export function AdminDashboard({ user }: { user: DashboardUser }) {
           </div>
         </div>
       </div>
-    </DashboardShell>
+    </AdminLayout>
   );
 }

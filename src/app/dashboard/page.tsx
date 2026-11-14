@@ -15,8 +15,7 @@ export default async function DashboardPage() {
   if (!session) redirect("/login");
 
   const user = session.user;
-  const role =
-    (user as { role?: string }).role ?? "seeker";
+  const role = (user as { role?: string }).role ?? "seeker";
   const dashboardUser = { name: user.name, image: user.image };
 
   if (role === "admin") return <AdminDashboard user={dashboardUser} />;

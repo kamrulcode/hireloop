@@ -1,29 +1,13 @@
 "use client";
 
 import {
-  Bell,
-  Briefcase,
   CheckCircle2,
   FileText,
-  LayoutDashboard,
-  Settings,
   Users,
   Zap,
 } from "lucide-react";
-import {
-  Avatar,
-  DashboardShell,
-  Fab,
-  type DashboardUser,
-} from "@/components/dashboard/shell";
-import { Logo } from "@/components/logo";
-
-const navItems = [
-  { label: "Dashboard", icon: LayoutDashboard },
-  { label: "Manage Jobs", icon: Briefcase },
-  { label: "Applications", icon: FileText },
-  { label: "Settings", icon: Settings },
-];
+import { Fab, type DashboardUser } from "@/components/dashboard/shell";
+import { RecruiterLayout } from "@/components/dashboard/layouts";
 
 const stats = [
   { label: "Total Job Posts", value: "48", icon: FileText },
@@ -76,43 +60,9 @@ const applications = [
 
 export function RecruiterDashboard({ user }: { user: DashboardUser }) {
   return (
-    <DashboardShell
-      brand={<Logo />}
-      sidebarTop={
-        <div className="rounded-xl border border-white/10 bg-[#111] p-3">
-          <div className="flex items-center gap-3">
-            <Avatar user={user} className="size-10 shrink-0" />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">
-                {user.name}
-              </p>
-              <p className="text-xs text-zinc-500">Recruiter</p>
-            </div>
-          </div>
-          <span className="mt-2.5 inline-block rounded-full bg-violet-600/20 px-2.5 py-1 text-xs font-medium text-violet-300 ring-1 ring-violet-500/30">
-            Premium account
-          </span>
-        </div>
-      }
-      navItems={navItems}
+    <RecruiterLayout
+      user={user}
       searchPlaceholder="Search applications, jobs, or talent..."
-      topbarRight={
-        <>
-          <button
-            type="button"
-            aria-label="Notifications"
-            className="relative text-zinc-400 hover:text-white"
-          >
-            <Bell className="size-5" />
-            <span className="absolute -top-1 -right-1 size-2 rounded-full bg-red-500" />
-          </button>
-          <div className="hidden text-right sm:block">
-            <p className="text-sm font-medium text-white">{user.name}</p>
-            <p className="text-xs text-zinc-500">TechFlow Inc.</p>
-          </div>
-          <Avatar user={user} className="size-8" />
-        </>
-      }
     >
       <div className="mx-auto max-w-6xl">
         <h1 className="text-2xl font-semibold text-white">
@@ -146,7 +96,7 @@ export function RecruiterDashboard({ user }: { user: DashboardUser }) {
         </div>
 
         <div className="mt-4 overflow-x-auto rounded-xl border border-white/10 bg-[#111]">
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="w-full min-w-180 text-sm">
             <thead>
               <tr className="border-b border-white/10 text-left text-xs tracking-wider text-zinc-500 uppercase">
                 <th className="px-5 py-4 font-medium">Candidate Name</th>
@@ -189,6 +139,6 @@ export function RecruiterDashboard({ user }: { user: DashboardUser }) {
         </div>
       </div>
       <Fab />
-    </DashboardShell>
+    </RecruiterLayout>
   );
 }

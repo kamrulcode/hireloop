@@ -4,13 +4,16 @@ import { useState } from "react";
 import { Menu, Search, X, type LucideIcon } from "lucide-react";
 import { LogoutButton } from "@/components/dashboard/logout-button";
 import { cn } from "cn";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export type DashboardUser = {
   name: string;
+  email?: string | null;
   image?: string | null;
 };
 
-export type NavItem = { label: string; icon: LucideIcon };
+export type NavItem = { label: string; icon: LucideIcon; href: string };
 
 /** Circular avatar: profile image when set, otherwise an initial. */
 export function Avatar({
@@ -53,9 +56,10 @@ function SidebarLink({
 }) {
   const Icon = item.icon;
   return (
-    <a
-      href="#"
+    <Link
+      href={item.href}
       onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
         active
@@ -65,7 +69,7 @@ function SidebarLink({
     >
       <Icon className="size-4" />
       {item.label}
-    </a>
+    </Link>
   );
 }
 
@@ -96,6 +100,9 @@ export function DashboardShell({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const closeSidebar = () => setSidebarOpen(false);
+  const pathname = usePathname();
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <div className="flex min-h-screen bg-[#0a0a0a] text-white">
@@ -128,11 +135,11 @@ export function DashboardShell({
         {sidebarTop}
 
         <nav className="mt-4 flex flex-col gap-1">
-          {navItems.map((item, i) => (
+          {navItems.map((item) => (
             <SidebarLink
-              key={item.label}
+              key={item.href}
               item={item}
-              active={i === 0}
+              active={isActive(item.href)}
               onNavigate={closeSidebar}
             />
           ))}
@@ -153,7 +160,11 @@ export function DashboardShell({
             onClick={() => setSidebarOpen((open) => !open)}
             className="shrink-0 text-zinc-400 hover:text-white lg:hidden"
           >
-            {sidebarOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            {sidebarOpen ? (
+              <X className="size-5" />
+            ) : (
+              <Menu className="size-5" />
+            )}
           </button>
 
           <div className="relative w-full min-w-0 max-w-72">

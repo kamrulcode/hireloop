@@ -1,36 +1,16 @@
 "use client";
 
 import {
-  Bell,
   Bookmark,
-  Briefcase,
-  CreditCard,
-  FileText,
+  Calendar,
   Gift,
-  LayoutDashboard,
   Mail,
   Megaphone,
   RefreshCw,
   Send,
-  Settings,
-  Calendar,
 } from "lucide-react";
-import {
-  Avatar,
-  DashboardShell,
-  Fab,
-  type DashboardUser,
-} from "@/components/dashboard/shell";
-import { Logo } from "@/components/logo";
-
-const navItems = [
-  { label: "Dashboard", icon: LayoutDashboard },
-  { label: "Jobs", icon: Briefcase },
-  { label: "Saved Jobs", icon: Bookmark },
-  { label: "Applications", icon: FileText },
-  { label: "Billing", icon: CreditCard },
-  { label: "Settings", icon: Settings },
-];
+import { Fab, type DashboardUser } from "@/components/dashboard/shell";
+import { SeekerLayout } from "@/components/dashboard/layouts";
 
 const stats = [
   { label: "Saved Jobs", value: "12", icon: Bookmark, color: "text-white" },
@@ -89,51 +69,7 @@ const activities: Activity[] = [
 
 export function SeekerDashboard({ user }: { user: DashboardUser }) {
   return (
-    <DashboardShell
-      brand={<Logo />}
-      sidebarTop={
-        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#111] p-3">
-          <Avatar user={user} className="size-10 shrink-0" />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-white">
-              {user.name}
-            </p>
-            <p className="text-xs text-zinc-500">Professional Tier</p>
-          </div>
-        </div>
-      }
-      sidebarBottom={
-        <button
-          type="button"
-          className="h-11 w-full rounded-lg bg-white text-sm font-medium text-black transition-colors hover:bg-zinc-200"
-        >
-          Post Resume
-        </button>
-      }
-      navItems={navItems}
-      searchPlaceholder="Search opportunities..."
-      topbarRight={
-        <>
-          <button
-            type="button"
-            aria-label="Messages"
-            className="relative text-zinc-400 hover:text-white"
-          >
-            <Mail className="size-5" />
-            <span className="absolute -top-1 -right-1 size-2 rounded-full bg-red-500" />
-          </button>
-          <button
-            type="button"
-            aria-label="Notifications"
-            className="relative text-zinc-400 hover:text-white"
-          >
-            <Bell className="size-5" />
-            <span className="absolute -top-1 -right-1 size-2 rounded-full bg-emerald-500" />
-          </button>
-          <Avatar user={user} className="size-8" />
-        </>
-      }
-    >
+    <SeekerLayout user={user} searchPlaceholder="Search opportunities...">
       <div className="mx-auto max-w-6xl">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => (
@@ -180,6 +116,6 @@ export function SeekerDashboard({ user }: { user: DashboardUser }) {
         </div>
       </div>
       <Fab />
-    </DashboardShell>
+    </SeekerLayout>
   );
 }

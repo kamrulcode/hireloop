@@ -10,37 +10,38 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # hireloop-client
 
-Single Next.js 16 App Router app — not a monorepo. Use **npm** (`package-lock.json` is the lockfile); yarn/pnpm/bun are not set up.
+Single Next.js 16 App Router app — not a monorepo. Use **npm** (`package-lock.json`); yarn/pnpm/bun are not set up.
 
 ## Commands
 
-- `npm run dev` — dev server (Turbopack). Also generates route types (see below).
+- `npm run dev` — dev server (Turbopack). Also writes `next-env.d.ts` and `.next/dev/types/`.
 - `npm run lint` — ESLint 9 flat config (`eslint.config.mjs`), whole repo. Focused: `npm run lint -- src/app/page.tsx` (args pass through after `--`).
 - `npx tsc --noEmit` — typecheck. There is **no** `typecheck` script.
-- `npm run build` — production build. **Cold it can exceed 10 minutes** (Turbopack cache empty); warm ≈ 3 min — don't kill it early assuming it hung.
+- `npm run build` — production build. ~3 min warm; a cold cache is slower — don't kill it early assuming it hung.
+- `npm start` — serve the production build.
 
 Verification order before finishing a change: `npm run lint` → `npx tsc --noEmit`.
 
-`README.md` is untouched create-next-app boilerplate and **wrong** in places (says `app/page.tsx` instead of `src/app/page.tsx`, suggests yarn/pnpm/bun). Trust this file over it.
+## Gotchas
 
-Gotchas:
-
-- **No tests, no test runner, no CI, no pre-commit hooks.** Don't invent `npm test` or look for a CI check — lint + typecheck are on you.
-- **Typecheck needs generated route types.** `next-env.d.ts` imports generated files under `.next/` (`.next/types/*.d.ts` after a build, `.next/dev/types/*.d.ts` after `next dev`), and `src/app/layout.tsx` uses the generated global `LayoutProps<"/">`. On a fresh clone or after deleting `.next/`, `npx tsc --noEmit` fails until `npm run dev` or `npm run build` has run once. Never hand-edit `next-env.d.ts` (it is regenerated; ESLint ignores it).
+- **No tests, no test runner, no CI, no pre-commit hooks.** Don't invent `npm test` or look for a CI check — lint + typecheck are the whole safety net.
+- **Typecheck needs generated route types.** `next-env.d.ts` is gitignored (as is `tsconfig.tsbuildinfo`) and imports `.next/dev/types/*` or `.next/types/*`; `src/app/layout.tsx` uses the generated global `LayoutProps<"/">`. On a fresh clone or after deleting `.next/`, `npx tsc --noEmit` fails until `npm run dev` or `npm run build` runs once. Never hand-edit `next-env.d.ts` (regenerated; ESLint ignores it).
+- `README.md` is untouched create-next-app boilerplate and **wrong** in places (says `app/page.tsx`, suggests yarn/pnpm/bun). Trust this file over it.
 
 ## Structure & conventions
 
-- App Router in `src/app/` (`layout.tsx`, `page.tsx`, `globals.css`). Path alias `@/*` → `./src/*` (from `tsconfig.json`). Landing sections live in `src/components/landing/`, auth UI in `src/components/auth/`.
-- **shadcn/ui v4 is initialized** (`components.json`, components in `src/components/ui/`). Primitives are built on **Base UI**, not Radix; import `cn` from the `"cn"` package. To make a shadcn Button navigate: `<Button render={<Link href="/login" />}>`. Don't re-run `shadcn init`.
-- `lucide-react@1` has **no brand icons** (Facebook/Github/etc. were removed) — use inline SVGs for those.
-- **Auth is better-auth + MongoDB.** Server config `src/lib/auth.ts` (email+password, Mongo adapter, db `hireloop`), client `src/lib/auth-client.ts`, catch-all handler `src/app/api/auth/[...all]/route.ts` — every auth endpoint lives under `/api/auth/*`. Session state is read server-side via `auth.api.getSession({ headers: await headers() })` (see `navbar.tsx`, which is why `/` builds as dynamic `ƒ`, not static). There is no `middleware.ts`.
-- **Roles** (`seeker` | `recruiter` | `admin`, default `seeker`) live in `user.additionalFields` in `src/lib/auth.ts` and are set by the signup form. `/dashboard` is a server page that reads the session and renders `src/components/dashboard/{seeker,recruiter,admin}.tsx` by role (no middleware; unauthenticated → redirect `/login`). Adding another user field requires declaring it in **both** `auth.ts` (server) and the `inferAdditionalFields` plugin in `auth-client.ts`, or `signUp.email` won't typecheck it.
-- **`.env` (gitignored) must define `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `MONGODB_URL`.** Build/lint/typecheck work without a running MongoDB (the client connects lazily), but sign-in/sign-up requests fail at runtime unless `MONGODB_URL` is reachable. Server-only vars are invisible to client components — `auth-client.ts`'s `baseURL: process.env.BETTER_AUTH_URL` is `undefined` in the browser and falls back to same-origin (fine locally; don't expect `.env` edits to change client behavior).
-- Tailwind **v4, CSS-first**: there is deliberately no `tailwind.config.*` or `postcss.config.*` — don't create them. CSS goes through the `@tailwindcss/turbopack` loader rule in `next.config.ts`; global styles use `@import "tailwindcss"` and `@theme inline` in `src/app/globals.css`. The site is fully dark (`class="dark"` on `<html>`); palette is the `.dark` block in `globals.css`.
-- React Compiler is enabled (`reactCompiler: true` + `babel-plugin-react-compiler` in `next.config.ts`) — components are auto-memoized, so don't sprinkle manual `memo`/`useMemo` around.
-- Event handlers can't live in server components — interactive bits (forms with `onSubmit`, stateful toggles) must be `"use client"` components.
-- The `<!-- BEGIN:nextjs-agent-rules -->` block above is auto-written by `next dev`. Keep it intact (markers included) so the tree stays clean.
+- Routes: `/`, `/login`, `/signup`, `/dashboard`, and the role-specific dashboard pages `/jobs`, `/saved-jobs`, `/applications`, `/billing`, `/manage-jobs`, `/users`, `/companies`, `/payments`, `/settings`, plus the catch-all `/api/auth/[...all]`. Shared paths dispatch by role (`/jobs` → seeker or admin, `/applications` → seeker or recruiter, `/settings` → all three), so a new page usually belongs in `src/components/dashboard/<role>-<page>.tsx` plus a thin `src/app/<path>/page.tsx` guarded by `src/lib/session.ts`.
+- Landing sections in `src/components/landing/` (server components; interactive ones are `*-client.tsx`), auth UI in `src/components/auth/`, per-role dashboards in `src/components/dashboard/`. `shell.tsx` is the shared chrome (sidebar, topbar, `Avatar`, `Fab`); `layouts.tsx` wraps it per role with the nav array + topbar icons (`SeekerLayout`, `RecruiterLayout`, `AdminLayout`); `ui.tsx` holds the dashboard table/stat/badge primitives. Path alias `@/*` → `./src/*`.
+- **shadcn/ui v4 on Base UI, not Radix** (`components.json` style `base-nova`, components in `src/components/ui/`). Don't re-run `shadcn init`. Base UI uses a `render` prop instead of Radix's `asChild`: `<Button render={<Link href="/login" />}>`. Import `cn` directly from the `"cn"` package like existing components do; `src/lib/utils.ts` is only the shadcn alias shim.
+- `lucide-react@1` has **no brand icons** (Facebook/GitHub/Google were removed) — inline the SVG, as `auth-form.tsx` does.
+- **Auth is better-auth + MongoDB** (`src/lib/auth.ts`, db `hireloop`; client `src/lib/auth-client.ts`). Only email+password is enabled — the "Continue with Google" button is a no-op placeholder. There is no `middleware.ts`; gate routes in server code.
+- **Roles** (`seeker` | `recruiter` | `admin`, default `seeker`) are better-auth `user.additionalFields`, set from the signup form — which lets anyone pick `admin`; nothing server-side restricts it. Declare new user fields once in `auth.ts`; the `inferAdditionalFields<typeof auth>()` plugin in `auth-client.ts` derives the client types from it (drop that plugin and `signUp.email` loses them). `session.user.role` is typed via inference, so the `(user as { role?: string })` casts in `navbar.tsx`/`dashboard/page.tsx` are redundant.
+- **Reading the session makes a route dynamic.** `auth.api.getSession({ headers: await headers() })` in `navbar.tsx` / `dashboard/page.tsx` keeps `/` and `/dashboard` server-rendered (`ƒ`); `/login` and `/signup` stay static. `/dashboard` redirects unauthenticated users to `/login` and renders `{seeker,recruiter,admin}.tsx` by role.
+- **`.env` (gitignored) must define `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `MONGODB_URL`.** Build/lint/typecheck don't need a live MongoDB (the client connects lazily), but auth requests fail at runtime unless `MONGODB_URL` is reachable. `BETTER_AUTH_URL` has no `NEXT_PUBLIC_` prefix, so it is `undefined` in client components — `auth-client.ts` falls back to same-origin, and `.env` edits won't change client behavior.
+- Tailwind **v4, CSS-first**: there is deliberately no `tailwind.config.*` or `postcss.config.*` — don't create them. `src/app/globals.css` imports `"tailwindcss"`, `"tw-animate-css"`, `"shadcn/tailwind.css"` and defines tokens in `@theme inline`; the app is permanently dark (`class="dark"` on `<html>`, palette in the `.dark` block). CSS is wired through the `@tailwindcss/turbopack` rule in `next.config.ts`.
+- React Compiler is enabled (`reactCompiler: true` + `babel-plugin-react-compiler`) — components are auto-memoized, so don't add `memo`/`useMemo`.
+- Event handlers can't live in server components — anything stateful (forms with `onSubmit`, dropdowns, toggles) must be `"use client"`.
 
 ## Next.js docs
 
-Version-matched docs live locally at `node_modules/next/dist/docs/` (`01-app/`, `02-pages/`, `03-architecture/`, ...). Prefer them over training-data knowledge for any Next API — this Next version has breaking changes.
+Version-matched docs live locally at `node_modules/next/dist/docs/` (`01-app/`, `02-pages/`, `03-architecture/`, ...). Prefer them over training-data knowledge for any Next API — this Next version has breaking changes. The `BEGIN:nextjs-agent-rules` block at the top is auto-written by `next dev`; leave it intact.
