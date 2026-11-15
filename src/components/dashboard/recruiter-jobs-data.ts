@@ -43,13 +43,28 @@ const categoryToIcon: Record<string, RecruiterJob["icon"]> = {
   Product: "engineering",
 };
 
-function isJobType(value: unknown): value is JobType {
-  return (
-    value === "Full-time" ||
-    value === "Part-time" ||
-    value === "Contract" ||
-    value === "Internship"
-  );
+/**
+ * The database stores job types in several spellings ("full-time",
+ * "Full-time", "part time", …), so normalise them to the four canonical
+ * `JobType` values the UI filters on.
+ */
+const jobTypeAliases: Record<string, JobType> = {
+  "full-time": "Full-time",
+  "full time": "Full-time",
+  fulltime: "Full-time",
+  "part-time": "Part-time",
+  "part time": "Part-time",
+  parttime: "Part-time",
+  contract: "Contract",
+  contractor: "Contract",
+  "contract-to-hire": "Contract",
+  internship: "Internship",
+  intern: "Internship",
+};
+
+function normalizeJobType(value: unknown): JobType {
+  if (typeof value !== "string") return "Full-time";
+  return jobTypeAliases[value.trim().toLowerCase()] ?? "Full-time";
 }
 
 function formatDeadline(value?: string) {
@@ -97,7 +112,7 @@ export function toRecruiterJob(job: JobDocument, index = 0): RecruiterJob {
   const category =
     typeof job.category === "string" ? job.category : "Engineering & Tech";
   const department = categoryToDepartment[category] ?? "Engineering";
-  const type = isJobType(job.type) ? job.type : "Full-time";
+  const type = normalizeJobType(job.type);
   const location = typeof job.location === "string" ? job.location : "Remote";
   const remote =
     typeof job.remote === "boolean" ? job.remote : /remote/i.test(location);

@@ -6,7 +6,6 @@ import {
   Globe2,
   MapPin,
   Megaphone,
-  MoreVertical,
   Pencil,
   PenTool,
   Plus,
@@ -32,6 +31,7 @@ import {
 import { cn } from "cn";
 import { getJobsData } from "@/lib/actions/getjobs";
 import { DeleteJob } from "./recruiter-delete-job";
+import { ViewDropdown } from "./ViewDropdown";
 
 const jobIcons: Record<
   RecruiterJob["icon"],
@@ -54,7 +54,12 @@ export async function RecruiterManageJobs({ user }: { user: DashboardUser }) {
       hideTopbar
     >
       <div className="mx-auto max-w-6xl">
-        <Breadcrumb items={["Manage Jobs", "Job Listings & Postings"]} />
+        <Breadcrumb
+          items={[
+            { label: "Manage Jobs", href: "/manage-jobs" },
+            "Job Listings & Postings",
+          ]}
+        />
 
         <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -172,7 +177,7 @@ export async function RecruiterManageJobs({ user }: { user: DashboardUser }) {
                       <td className={cn(td, "py-5")}>
                         <span className="flex items-center justify-end gap-2">
                           <Link
-                            href={`/manage-jobs/${job.id}`}
+                            href={`/manage-jobs/${job.id}?mode=edit`}
                             className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#4f46e5] px-3 text-sm font-medium text-white transition-colors hover:bg-[#5b5bf0]"
                           >
                             <Pencil className="size-3.5" />
@@ -181,13 +186,7 @@ export async function RecruiterManageJobs({ user }: { user: DashboardUser }) {
 
                           <DeleteJob job={job} />
 
-                          <button
-                            type="button"
-                            aria-label={`More actions for ${job.title}`}
-                            className="flex size-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:text-white"
-                          >
-                            <MoreVertical className="size-4" />
-                          </button>
+                          <ViewDropdown job={job} />
                         </span>
                       </td>
                     </tr>

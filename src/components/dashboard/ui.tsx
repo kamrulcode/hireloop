@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronRight, type LucideIcon } from "lucide-react";
+import Link from "next/link";
 import { cn } from "cn";
 
 export const card = "rounded-xl border border-white/10 bg-[#111]";
@@ -84,20 +85,50 @@ export function PageHeader({
   );
 }
 
-export function Breadcrumb({ items }: { items: string[] }) {
+export type BreadcrumbItem =
+  | string
+  | {
+      label: string;
+      /** Adds a link. Omit it for plain text (e.g. the current page). */
+      href?: string;
+    };
+
+export function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
   return (
     <nav
       aria-label="Breadcrumb"
       className="flex flex-wrap items-center gap-2 text-sm text-zinc-500"
     >
-      {items.map((item, i) => (
-        <span key={item} className="flex items-center gap-2">
-          {i > 0 && <ChevronRight className="size-3.5 text-zinc-600" />}
-          <span className={i === items.length - 1 ? "text-zinc-400" : ""}>
-            {item}
+      {items.map((item, i) => {
+        const label = typeof item === "string" ? item : item.label;
+        const href = typeof item === "string" ? undefined : item.href;
+        const isLast = i === items.length - 1;
+
+        return (
+          <span key={`${label}-${i}`} className="flex items-center gap-2">
+            {i > 0 && <ChevronRight className="size-3.5 text-zinc-600" />}
+            {href ? (
+              <Link
+                href={href}
+                aria-current={isLast ? "page" : undefined}
+                className={cn(
+                  "transition-colors hover:text-white",
+                  isLast && "text-zinc-400",
+                )}
+              >
+                {label}
+              </Link>
+            ) : (
+              <span
+                aria-current={isLast ? "page" : undefined}
+                className={isLast ? "text-zinc-400" : ""}
+              >
+                {label}
+              </span>
+            )}
           </span>
-        </span>
-      ))}
+        );
+      })}
     </nav>
   );
 }

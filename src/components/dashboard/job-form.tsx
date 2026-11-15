@@ -220,8 +220,12 @@ export function JobForm({
       <Breadcrumb
         items={
           isCreate
-            ? ["Manage Jobs", "Create New Listing"]
-            : ["Manage Jobs", "Job Listings & Postings", "Update Job Post"]
+            ? [{ label: "Manage Jobs", href: "/manage-jobs" }, "Create New Listing"]
+            : [
+                { label: "Manage Jobs", href: "/manage-jobs" },
+                { label: "Job Listings & Postings", href: "/manage-jobs" },
+                "Update Job Post",
+              ]
         }
       />
 

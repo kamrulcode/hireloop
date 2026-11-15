@@ -31,11 +31,11 @@ export type JobDocument = {
 };
 
 /** GET /jobs — every job in the database, newest last. */
-export async function getJobsData(): Promise<JobDocument[]> {
+export async function getJobsData(query = ""): Promise<JobDocument[]> {
   let response: Response;
 
   try {
-    response = await fetch(`${BASE_URL}/jobs`, { cache: "no-store" });
+    response = await fetch(`${BASE_URL}/jobs?${query}`, { cache: "no-store" });
   } catch {
     // fetch() only rejects when the server is unreachable (or the URL is bad),
     // and the default error message is just "fetch failed", which helps nobody.
