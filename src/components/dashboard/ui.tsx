@@ -1,11 +1,13 @@
 "use client";
 
-import { ChevronDown, type LucideIcon } from "lucide-react";
+import { ChevronDown, ChevronRight, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
 
 export const card = "rounded-xl border border-white/10 bg-[#111]";
 export const btnPrimary =
   "inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-zinc-200";
+export const btnIndigo =
+  "inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#4f46e5] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#5b5bf0]";
 export const btnOutline =
   "inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-white/10 bg-[#141414] px-4 text-sm font-medium text-white transition-colors hover:bg-[#1c1c1c]";
 export const inputClass =
@@ -79,6 +81,24 @@ export function PageHeader({
         <div className="flex flex-wrap items-center gap-3">{actions}</div>
       )}
     </div>
+  );
+}
+
+export function Breadcrumb({ items }: { items: string[] }) {
+  return (
+    <nav
+      aria-label="Breadcrumb"
+      className="flex flex-wrap items-center gap-2 text-sm text-zinc-500"
+    >
+      {items.map((item, i) => (
+        <span key={item} className="flex items-center gap-2">
+          {i > 0 && <ChevronRight className="size-3.5 text-zinc-600" />}
+          <span className={i === items.length - 1 ? "text-zinc-400" : ""}>
+            {item}
+          </span>
+        </span>
+      ))}
+    </nav>
   );
 }
 

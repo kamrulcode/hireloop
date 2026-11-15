@@ -88,6 +88,7 @@ export function DashboardShell({
   navItems,
   searchPlaceholder,
   topbarRight,
+  hideTopbar,
   children,
 }: {
   brand: React.ReactNode;
@@ -96,6 +97,7 @@ export function DashboardShell({
   navItems: NavItem[];
   searchPlaceholder: string;
   topbarRight?: React.ReactNode;
+  hideTopbar?: boolean;
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -152,31 +154,50 @@ export function DashboardShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-white/5 bg-[#0a0a0a]/95 px-4 backdrop-blur sm:gap-4 sm:px-6">
-          <button
-            type="button"
-            aria-label={sidebarOpen ? "Close menu" : "Open menu"}
-            aria-expanded={sidebarOpen}
-            onClick={() => setSidebarOpen((open) => !open)}
-            className="shrink-0 text-zinc-400 hover:text-white lg:hidden"
-          >
-            {sidebarOpen ? (
-              <X className="size-5" />
-            ) : (
-              <Menu className="size-5" />
-            )}
-          </button>
+        {hideTopbar ? (
+          <header className="flex h-14 items-center gap-3 border-b border-white/5 px-4 lg:hidden">
+            <button
+              type="button"
+              aria-label={sidebarOpen ? "Close menu" : "Open menu"}
+              aria-expanded={sidebarOpen}
+              onClick={() => setSidebarOpen((open) => !open)}
+              className="shrink-0 text-zinc-400 hover:text-white"
+            >
+              {sidebarOpen ? (
+                <X className="size-5" />
+              ) : (
+                <Menu className="size-5" />
+              )}
+            </button>
+            {brand}
+          </header>
+        ) : (
+          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-white/5 bg-[#0a0a0a]/95 px-4 backdrop-blur sm:gap-4 sm:px-6">
+            <button
+              type="button"
+              aria-label={sidebarOpen ? "Close menu" : "Open menu"}
+              aria-expanded={sidebarOpen}
+              onClick={() => setSidebarOpen((open) => !open)}
+              className="shrink-0 text-zinc-400 hover:text-white lg:hidden"
+            >
+              {sidebarOpen ? (
+                <X className="size-5" />
+              ) : (
+                <Menu className="size-5" />
+              )}
+            </button>
 
-          <div className="relative w-full min-w-0 max-w-72">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-500" />
-            <input
-              type="search"
-              placeholder={searchPlaceholder}
-              className="h-9 w-full rounded-lg border border-white/10 bg-[#141414] pr-3 pl-9 text-sm text-white placeholder:text-zinc-500 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-            />
-          </div>
-          <div className="ml-auto flex items-center gap-4">{topbarRight}</div>
-        </header>
+            <div className="relative w-full min-w-0 max-w-72">
+              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-500" />
+              <input
+                type="search"
+                placeholder={searchPlaceholder}
+                className="h-9 w-full rounded-lg border border-white/10 bg-[#141414] pr-3 pl-9 text-sm text-white placeholder:text-zinc-500 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              />
+            </div>
+            <div className="ml-auto flex items-center gap-4">{topbarRight}</div>
+          </header>
+        )}
 
         <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6">{children}</main>
       </div>

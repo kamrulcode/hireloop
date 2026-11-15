@@ -11,6 +11,7 @@ import {
   FileText,
   LayoutDashboard,
   Mail,
+  PlusCircle,
   Settings,
   Users,
   type LucideIcon,
@@ -35,6 +36,7 @@ const seekerNav: NavItem[] = [
 
 const recruiterNav: NavItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+  { label: "Add Job", icon: PlusCircle, href: "/add-new-job" },
   { label: "Manage Jobs", icon: Briefcase, href: "/manage-jobs" },
   { label: "Applications", icon: FileText, href: "/applications" },
   { label: "Settings", icon: Settings, href: "/settings" },
@@ -53,6 +55,7 @@ type LayoutProps = {
   user: DashboardUser;
   searchPlaceholder?: string;
   topbarExtra?: React.ReactNode;
+  hideTopbar?: boolean;
   children: React.ReactNode;
 };
 
@@ -74,10 +77,7 @@ function TopbarIcon({
       <Icon className="size-5" />
       {dot && (
         <span
-          className={cn(
-            "absolute -top-1 -right-1 size-2 rounded-full",
-            dot,
-          )}
+          className={cn("absolute -top-1 -right-1 size-2 rounded-full", dot)}
         />
       )}
     </button>
@@ -144,11 +144,13 @@ export function RecruiterLayout({
   user,
   searchPlaceholder = "Search applications, jobs, or talent...",
   topbarExtra,
+  hideTopbar,
   children,
 }: LayoutProps) {
   return (
     <DashboardShell
       brand={<Logo />}
+      hideTopbar={hideTopbar}
       sidebarTop={
         <div className="rounded-xl border border-white/10 bg-[#111] p-3">
           <div className="flex items-center gap-3">

@@ -1,216 +1,199 @@
-"use client";
-
+import Link from "next/link";
 import {
-  Briefcase,
-  Calendar,
-  Eye,
-  FileText,
+  Cloud,
+  Code2,
+  Cog,
+  Globe2,
+  MapPin,
+  Megaphone,
+  MoreVertical,
   Pencil,
+  PenTool,
   Plus,
-  Trash2,
   Users,
+  type LucideIcon,
 } from "lucide-react";
+
 import { RecruiterLayout } from "@/components/dashboard/layouts";
+import {
+  type RecruiterJob,
+  toRecruiterJob,
+} from "@/components/dashboard/recruiter-jobs-data";
 import { type DashboardUser } from "@/components/dashboard/shell";
 import {
-  PageHeader,
-  SelectBox,
-  StatCard,
+  Breadcrumb,
   StatusBadge,
-  btnPrimary,
+  btnIndigo,
   card,
-  inputClass,
   td,
   th,
-  type Tone,
 } from "@/components/dashboard/ui";
+
 import { cn } from "cn";
+import { getJobsData } from "@/lib/actions/getjobs";
+import { DeleteJob } from "./recruiter-delete-job";
 
-type JobPost = {
-  title: string;
-  ref: string;
-  applicants: string;
-  posted: string;
-  status: "Active" | "Paused" | "Closed";
+const jobIcons: Record<
+  RecruiterJob["icon"],
+  { icon: LucideIcon; className: string }
+> = {
+  engineering: { icon: Code2, className: "text-violet-400" },
+  design: { icon: PenTool, className: "text-orange-400" },
+  infrastructure: { icon: Cloud, className: "text-sky-400" },
+  marketing: { icon: Megaphone, className: "text-red-400" },
+  quality: { icon: Cog, className: "text-yellow-400" },
 };
 
-const jobs: JobPost[] = [
-  {
-    title: "Senior Product Designer",
-    ref: "HL-90210",
-    applicants: "128",
-    posted: "Oct 24, 2023",
-    status: "Active",
-  },
-  {
-    title: "Full-stack Engineer",
-    ref: "HL-88231",
-    applicants: "96",
-    posted: "Oct 22, 2023",
-    status: "Active",
-  },
-  {
-    title: "Marketing Director",
-    ref: "HL-11022",
-    applicants: "41",
-    posted: "Oct 15, 2023",
-    status: "Paused",
-  },
-  {
-    title: "Backend Architect",
-    ref: "HL-99032",
-    applicants: "74",
-    posted: "Oct 20, 2023",
-    status: "Active",
-  },
-  {
-    title: "UX Research Lead",
-    ref: "HL-44112",
-    applicants: "12",
-    posted: "Oct 19, 2023",
-    status: "Closed",
-  },
-];
+export async function RecruiterManageJobs({ user }: { user: DashboardUser }) {
+  const jobs = (await getJobsData()).map(toRecruiterJob);
 
-const statusTone: Record<JobPost["status"], Tone> = {
-  Active: "green",
-  Paused: "amber",
-  Closed: "gray",
-};
-
-export function RecruiterManageJobs({ user }: { user: DashboardUser }) {
   return (
     <RecruiterLayout
       user={user}
-      searchPlaceholder="Search job posts or refs..."
+      searchPlaceholder="Search job posts..."
+      hideTopbar
     >
       <div className="mx-auto max-w-6xl">
-        <PageHeader
-          title="Manage Jobs"
-          description="Create, edit, and track the performance of your open roles."
-          actions={
-            <button type="button" className={btnPrimary}>
-              <Plus className="size-4" />
-              Create Job
-            </button>
-          }
-        />
+        <Breadcrumb items={["Manage Jobs", "Job Listings & Postings"]} />
 
-        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            label="Active Jobs"
-            value="18"
-            icon={Briefcase}
-            hint="6 closing this month"
-            hintTone="text-amber-400"
-          />
-          <StatCard
-            label="Total Job Posts"
-            value="48"
-            icon={FileText}
-            hint="+4 this month"
-            hintTone="text-emerald-400"
-          />
-          <StatCard
-            label="Total Applicants"
-            value="1,284"
-            icon={Users}
-            hint="+18% vs last month"
-            hintTone="text-emerald-400"
-          />
-          <StatCard
-            label="Interviews Scheduled"
-            value="32"
-            icon={Calendar}
-            hint="12 this week"
-            hintTone="text-zinc-400"
-          />
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-white">
+              Manage Job Posts
+            </h1>
+            <p className="mt-2 text-sm text-zinc-500">
+              Review live listings, monitor applicants, and update job details
+              across your organization.
+            </p>
+          </div>
+          <Link href="/add-new-job" className={btnIndigo}>
+            <Plus className="size-4" />
+            New Job Post
+          </Link>
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <input
-            type="search"
-            placeholder="Search job title or ref..."
-            aria-label="Search job posts"
-            className={cn(inputClass, "max-w-72")}
-          />
-          <SelectBox
-            label="Filter by status"
-            options={["All Statuses", "Active", "Paused", "Closed"]}
-            className="w-44"
-          />
-          <SelectBox
-            label="Filter by category"
-            options={[
-              "All Categories",
-              "Design",
-              "Engineering",
-              "Marketing",
-              "Product",
-            ]}
-            className="w-48"
-          />
-        </div>
-
-        <div className={cn(card, "mt-4 overflow-x-auto")}>
-          <table className="w-full min-w-200 text-sm">
+        <div className={cn(card, "mt-6 overflow-x-auto bg-[#0c0c0c]")}>
+          <table className="w-full min-w-275 text-sm">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className={th}>Job Title</th>
+              <tr className="border-b border-white/10 bg-[#101010]">
+                <th className={th}>Job Title & Dept</th>
+                <th className={th}>Company & Location</th>
+                <th className={th}>Type</th>
+                <th className={th}>Compensation</th>
                 <th className={th}>Applicants</th>
-                <th className={th}>Date Posted</th>
                 <th className={th}>Status</th>
+                <th className={th}>Deadline</th>
                 <th className={cn(th, "text-right")}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {jobs.map((job) => (
-                <tr
-                  key={job.ref}
-                  className="border-b border-white/5 last:border-0"
-                >
-                  <td className={td}>
-                    <span className="block font-medium text-white">
-                      {job.title}
-                    </span>
-                    <span className="block text-xs text-zinc-500">
-                      Ref: {job.ref}
-                    </span>
-                  </td>
-                  <td className={cn(td, "text-zinc-300")}>{job.applicants}</td>
-                  <td className={cn(td, "whitespace-nowrap text-zinc-400")}>
-                    {job.posted}
-                  </td>
-                  <td className={td}>
-                    <StatusBadge tone={statusTone[job.status]}>
-                      {job.status}
-                    </StatusBadge>
-                  </td>
-                  <td className={cn(td, "text-right whitespace-nowrap")}>
-                    <button
-                      type="button"
-                      aria-label={`View ${job.title}`}
-                      className="text-zinc-400 transition-colors hover:text-white"
-                    >
-                      <Eye className="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Edit ${job.title}`}
-                      className="ml-4 text-zinc-400 transition-colors hover:text-white"
-                    >
-                      <Pencil className="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Delete ${job.title}`}
-                      className="ml-4 text-zinc-400 transition-colors hover:text-red-400"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
+              {jobs.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className={cn(td, "py-12 text-center text-zinc-400")}
+                  >
+                    No jobs posted yet.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                jobs.map((job) => {
+                  const meta = jobIcons[job.icon];
+                  const Icon = meta.icon;
+                  return (
+                    <tr
+                      key={job.id}
+                      className="border-b border-white/5 transition-colors last:border-0 hover:bg-white/2"
+                    >
+                      <td className={cn(td, "py-5")}>
+                        <span className="flex items-center gap-3">
+                          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-white/5 bg-[#171717]">
+                            <Icon className={cn("size-5", meta.className)} />
+                          </span>
+                          <span>
+                            <span className="block font-medium text-white">
+                              {job.title}
+                            </span>
+                            <span
+                              className={cn("block text-xs", meta.className)}
+                            >
+                              {job.department}
+                            </span>
+                          </span>
+                        </span>
+                      </td>
+                      <td className={cn(td, "py-5")}>
+                        <span className="block text-zinc-200">
+                          {job.company}
+                        </span>
+                        <span className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500">
+                          {job.remote ? (
+                            <Globe2 className="size-3.5 shrink-0" />
+                          ) : (
+                            <MapPin className="size-3.5 shrink-0" />
+                          )}
+                          {job.location}
+                        </span>
+                      </td>
+                      <td className={cn(td, "py-5")}>
+                        <span className="inline-block rounded-full border border-white/10 bg-[#1a1a1a] px-3 py-1 text-xs whitespace-nowrap text-zinc-300">
+                          {job.type}
+                        </span>
+                      </td>
+                      <td
+                        className={cn(
+                          td,
+                          "py-5 whitespace-nowrap text-zinc-200",
+                        )}
+                      >
+                        {job.pay}
+                      </td>
+                      <td className={cn(td, "py-5")}>
+                        <span className="flex items-center gap-2 whitespace-nowrap text-zinc-300">
+                          <Users className="size-4 text-zinc-500" />
+                          {job.applicants} Candidates
+                        </span>
+                      </td>
+                      <td className={cn(td, "py-5")}>
+                        <StatusBadge
+                          tone={job.status === "Active" ? "green" : "gray"}
+                        >
+                          {job.status}
+                        </StatusBadge>
+                      </td>
+                      <td className={cn(td, "py-5 whitespace-nowrap")}>
+                        <span className="block text-zinc-200">
+                          {job.deadline}
+                        </span>
+                        <span className="block text-xs text-zinc-500">
+                          {job.postedAgo}
+                        </span>
+                      </td>
+                      <td className={cn(td, "py-5")}>
+                        <span className="flex items-center justify-end gap-2">
+                          <Link
+                            href={`/manage-jobs/${job.id}`}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#4f46e5] px-3 text-sm font-medium text-white transition-colors hover:bg-[#5b5bf0]"
+                          >
+                            <Pencil className="size-3.5" />
+                            Update
+                          </Link>
+
+                          <DeleteJob job={job} />
+
+                          <button
+                            type="button"
+                            aria-label={`More actions for ${job.title}`}
+                            className="flex size-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:text-white"
+                          >
+                            <MoreVertical className="size-4" />
+                          </button>
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
