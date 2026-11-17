@@ -55,17 +55,30 @@ export async function getJobsData(query = ""): Promise<JobDocument[]> {
 }
 
 /**
- * Find one job by its id.
- *
- * The API has no `GET /jobs/:id` route yet, so we download the list and
- * pick the matching document here. That is fine for a small number of jobs.
+ * Find one job by its id through `GET /jobs/:id`.
+ * Returns `null` when the API says the id is unknown or malformed.
  */
 export async function getJobById(id: string): Promise<JobDocument | null> {
-  const jobs = await getJobsData();
+  const url = `${BASE_URL}/jobs/${encodeURIComponent(id)}`;
+  let response: Response;
 
-  const job = jobs.find(
-    (item) => String(item._id ?? item.id ?? "") === String(id),
-  );
+  try {
+    response = await fetch(url, { cache: "no-store" });
+  } catch {
+    throw new Error(
+      `Could not reach the job API at ${url}. Is hireloop-server running?`,
+    );
+  }
 
-  return job ?? null;
+  // 400 = malformed ObjectId, 404 = no document. Both mean "no such job".
+  if (response.status === 400 || response.status === 404) return null;
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to load job: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const data: unknown = await response.json();
+  return data && typeof data === "object" ? (data as JobDocument) : null;
 }

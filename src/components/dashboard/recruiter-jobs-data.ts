@@ -2,6 +2,24 @@ import type { JobDocument } from "@/lib/actions/getjobs";
 
 export type JobType = "Full-time" | "Part-time" | "Contract" | "Internship";
 
+/** Types offered by the job form and the browse filters. */
+export const JOB_TYPES: JobType[] = [
+  "Full-time",
+  "Part-time",
+  "Contract",
+  "Internship",
+];
+
+/** Categories offered by the job form and the browse filters. */
+export const JOB_CATEGORIES: string[] = [
+  "Engineering & Tech",
+  "Design",
+  "Marketing",
+  "Infrastructure",
+  "Quality",
+  "Product",
+];
+
 export type RecruiterJob = {
   id: string;
   title: string;

@@ -12,28 +12,14 @@ import {
   MapPin,
 } from "lucide-react";
 import {
+  JOB_CATEGORIES,
+  JOB_TYPES,
   type JobType,
   type RecruiterJob,
 } from "@/components/dashboard/recruiter-jobs-data";
 import { Breadcrumb, btnIndigo } from "@/components/dashboard/ui";
 import { cn } from "cn";
 import { createJob, updateJob } from "@/lib/actions/jobs";
-
-const jobTypes: JobType[] = [
-  "Full-time",
-  "Part-time",
-  "Contract",
-  "Internship",
-];
-
-const categories = [
-  "Engineering & Tech",
-  "Design",
-  "Marketing",
-  "Infrastructure",
-  "Quality",
-  "Product",
-];
 
 const inputClass =
   "h-11 w-full rounded-lg border border-white/10 bg-[#151515] px-3.5 text-sm text-white outline-none placeholder:text-zinc-600 focus-visible:border-indigo-500/60";
@@ -176,7 +162,7 @@ export function JobForm({
       title: String(formData.get("title") ?? ""),
       company: String(formData.get("company") ?? ""),
       category: String(formData.get("category") ?? ""),
-      type: jobTypes.find((type) => type === submittedType) ?? "Full-time",
+      type: JOB_TYPES.find((type) => type === submittedType) ?? "Full-time",
       remote: formData.get("remote") === "true",
       location: String(formData.get("location") ?? ""),
       deadline: String(formData.get("deadline") ?? ""),
@@ -281,7 +267,7 @@ export function JobForm({
                 name="category"
                 required
                 defaultValue={job?.category ?? "Engineering & Tech"}
-                options={categories}
+                options={JOB_CATEGORIES}
               />
             </div>
           </div>
@@ -289,7 +275,7 @@ export function JobForm({
           <div>
             <Label required>Job Type</Label>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {jobTypes.map((type) => (
+              {JOB_TYPES.map((type) => (
                 <button
                   key={type}
                   type="button"

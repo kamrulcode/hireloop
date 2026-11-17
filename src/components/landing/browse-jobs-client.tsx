@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Bookmark,
   ChevronDown,
@@ -19,17 +20,12 @@ import {
 } from "lucide-react";
 import { cn } from "cn";
 
-import type {
-  JobType,
-  RecruiterJob,
+import {
+  JOB_CATEGORIES,
+  JOB_TYPES,
+  type RecruiterJob,
 } from "@/components/dashboard/recruiter-jobs-data";
-
-const JOB_TYPES: JobType[] = [
-  "Full-time",
-  "Part-time",
-  "Contract",
-  "Internship",
-];
+import Link from "next/link";
 
 const PAGE_SIZE = 5;
 
@@ -41,14 +37,6 @@ const SORT_OPTIONS = [
 ] as const;
 
 type SortKey = (typeof SORT_OPTIONS)[number]["value"];
-type ModeFilter = "remote" | "onsite";
-type FilterValue = string | null;
-
-interface FilterOption {
-  value: string;
-  label: string;
-  count: number;
-}
 
 /** Same department → icon/colour mapping the dashboard uses. */
 const departmentStyles: Record<
@@ -67,14 +55,6 @@ const chip =
 
 const pagerBtn =
   "flex size-9 items-center justify-center rounded-lg border border-white/10 bg-[#111] text-sm text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-40";
-
-function formatCount(count: number) {
-  if (count >= 1000) {
-    const value = count / 1000;
-    return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)}k`;
-  }
-  return String(count);
-}
 
 /** Turn a stored salary string ("120k", "95000", …) into a sortable number. */
 function salaryScore(job: RecruiterJob) {
@@ -105,51 +85,44 @@ function pageItems(current: number, total: number): (number | "ellipsis")[] {
   return items;
 }
 
-function FilterRow({
+function RadioRow({
   name,
   label,
-  count,
   checked,
-  onSelect,
+  onChange,
 }: {
   name: string;
   label: string;
-  count: number;
   checked: boolean;
-  onSelect: () => void;
+  onChange: () => void;
 }) {
   return (
     <li>
       <label
         className={cn(
-          "flex cursor-pointer items-center justify-between gap-3 rounded-lg px-1.5 py-1.5 text-sm transition-colors",
+          "flex cursor-pointer items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-sm transition-colors",
           checked ? "text-white" : "text-zinc-300 hover:text-white",
         )}
       >
-        <span className="flex min-w-0 items-center gap-2.5">
-          <input
-            type="radio"
-            name={name}
-            checked={checked}
-            onChange={onSelect}
-            className="peer sr-only"
-          />
-          <span
-            className={cn(
-              "flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors",
-              "peer-focus-visible:ring-2 peer-focus-visible:ring-white/30",
-              checked
-                ? "border-[#4f46e5] bg-[#4f46e5]"
-                : "border-white/15 bg-transparent",
-            )}
-          >
-            {checked && <span className="size-1.5 rounded-full bg-white" />}
-          </span>
-          <span className="truncate">{label}</span>
+        <input
+          type="radio"
+          name={name}
+          checked={checked}
+          onChange={onChange}
+          className="peer sr-only"
+        />
+        <span
+          className={cn(
+            "flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors",
+            "peer-focus-visible:ring-2 peer-focus-visible:ring-white/30",
+            checked
+              ? "border-[#4f46e5] bg-[#4f46e5]"
+              : "border-white/15 bg-transparent",
+          )}
+        >
+          {checked && <span className="size-1.5 rounded-full bg-white" />}
         </span>
-        <span className="text-xs text-zinc-500 tabular-nums">
-          {formatCount(count)}
-        </span>
+        {label}
       </label>
     </li>
   );
@@ -160,15 +133,13 @@ function FilterGroup({
   name,
   value,
   options,
-  allCount,
   onChange,
 }: {
   title: string;
   name: string;
-  value: FilterValue;
-  options: FilterOption[];
-  allCount: number;
-  onChange: (value: FilterValue) => void;
+  value: string | null;
+  options: { value: string; label: string }[];
+  onChange: (value: string | null) => void;
 }) {
   return (
     <div className="border-t border-white/5 pt-4 first:border-t-0 first:pt-0">
@@ -176,21 +147,19 @@ function FilterGroup({
         {title}
       </h3>
       <ul className="mt-2 flex flex-col gap-0.5">
-        <FilterRow
+        <RadioRow
           name={name}
           label="All"
-          count={allCount}
           checked={value === null}
-          onSelect={() => onChange(null)}
+          onChange={() => onChange(null)}
         />
         {options.map((option) => (
-          <FilterRow
+          <RadioRow
             key={option.value}
             name={name}
             label={option.label}
-            count={option.count}
             checked={value === option.value}
-            onSelect={() => onChange(option.value)}
+            onChange={() => onChange(option.value)}
           />
         ))}
       </ul>
@@ -234,7 +203,7 @@ function JobCard({
   const locationMentionsRemote = /remote/i.test(job.location);
 
   return (
-    <article className="group rounded-xl border border-white/10 bg-[#111] p-5 transition-colors hover:border-white/20 hover:bg-[#141414]">
+    <article className="group relative rounded-xl border border-white/10 bg-[#111] p-5 transition-colors hover:border-white/20 hover:bg-[#141414]">
       <div className="flex items-start gap-4">
         <span
           className={cn(
@@ -261,7 +230,7 @@ function JobCard({
               aria-pressed={saved}
               onClick={() => onToggleSaved(job.id)}
               className={cn(
-                "flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors",
+                "relative z-20 flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors",
                 saved
                   ? "border-indigo-500/40 bg-indigo-500/15 text-indigo-300"
                   : "border-white/10 bg-[#141414] text-zinc-500 hover:border-white/20 hover:text-white",
@@ -303,87 +272,62 @@ function JobCard({
           </div>
         </div>
       </div>
+
+      {/* Stretched link makes the whole card clickable without nesting the
+          bookmark button inside an anchor. */}
+      <Link
+        href={`/browser-jobs/${job.id}`}
+        aria-label={`View details for ${job.title}`}
+        className="absolute inset-0 z-10 rounded-xl focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none"
+      />
     </article>
   );
 }
 
 export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
-  const [query, setQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<JobType | null>(null);
-  const [modeFilter, setModeFilter] = useState<ModeFilter | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const [sort, setSort] = useState<SortKey>("recent");
-  const [page, setPage] = useState(1);
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [savedIds, setSavedIds] = useState<string[]>([]);
 
-  const normalizedQuery = query.trim().toLowerCase();
+  // All filter state lives in the URL, so it survives refreshes and is
+  // shareable. The server page reads the same params and queries the API.
+  const search = searchParams.get("search")?.trim() ?? "";
+  const type = searchParams.get("type");
+  const remote = searchParams.get("remote");
+  const category = searchParams.get("category");
 
-  const matchesType = (job: RecruiterJob) =>
-    typeFilter === null || job.type === typeFilter;
-  const matchesMode = (job: RecruiterJob) =>
-    modeFilter === null || job.remote === (modeFilter === "remote");
-  const matchesCategory = (job: RecruiterJob) =>
-    categoryFilter === null || job.category === categoryFilter;
-
-  const searched = normalizedQuery
-    ? jobs.filter((job) =>
-        [job.title, job.company, job.location, job.category, job.department]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedQuery),
-      )
-    : jobs;
-
-  const filtered = searched.filter(
-    (job) => matchesType(job) && matchesMode(job) && matchesCategory(job),
-  );
-
-  // Faceted counts: each group's numbers ignore its own selection but respect
-  // the other groups, so every option shows how many jobs you would get.
-  const typePool = searched.filter(
-    (job) => matchesMode(job) && matchesCategory(job),
-  );
-  const modePool = searched.filter(
-    (job) => matchesType(job) && matchesCategory(job),
-  );
-  const categoryPool = searched.filter(
-    (job) => matchesType(job) && matchesMode(job),
-  );
-
-  // Options themselves come from the full dataset, so a search that hides a
-  // type or category never makes the filter disappear.
-  const typeOptions: FilterOption[] = JOB_TYPES.filter((type) =>
-    jobs.some((job) => job.type === type),
-  ).map((type) => ({
-    value: type,
-    label: type,
-    count: typePool.filter((job) => job.type === type).length,
-  }));
-
-  const modeOptions: FilterOption[] = [
-    { value: "remote", label: "Remote", remote: true },
-    { value: "onsite", label: "On-site", remote: false },
-  ]
-    .filter((option) => jobs.some((job) => job.remote === option.remote))
-    .map((option) => ({
-      value: option.value,
-      label: option.label,
-      count: modePool.filter((job) => job.remote === option.remote).length,
-    }));
-
-  const categoryOptions: FilterOption[] = Array.from(
-    new Set(jobs.map((job) => job.category)),
+  const sortParam = searchParams.get("sort");
+  const sort: SortKey = SORT_OPTIONS.some(
+    (option) => option.value === sortParam,
   )
-    .sort((a, b) => a.localeCompare(b))
-    .map((category) => ({
-      value: category,
-      label: category,
-      count: categoryPool.filter((job) => job.category === category).length,
-    }));
+    ? (sortParam as SortKey)
+    : "recent";
 
-  // The API returns the newest job last, so "Most Recent" simply reverses it.
+  const pageParam = Number(searchParams.get("page"));
+  const page = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1;
+
+  function setParam(key: string, value: string | null, resetPage = true) {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+
+    // Any filter change starts from page 1 again.
+    if (resetPage) params.delete("page");
+
+    const query = params.toString();
+    router.push(query ? `/browser-jobs?${query}` : "/browser-jobs");
+  }
+
+  function goToPage(target: number) {
+    setParam("page", target > 1 ? String(target) : null, false);
+  }
+
   const sorted = (() => {
-    const list = [...filtered];
+    const list = [...jobs];
 
     switch (sort) {
       case "salary":
@@ -393,6 +337,7 @@ export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
       case "title":
         return list.sort((a, b) => a.title.localeCompare(b.title));
       default:
+        // The API returns the newest job last.
         return list.reverse();
     }
   })();
@@ -404,26 +349,7 @@ export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
     currentPage * PAGE_SIZE,
   );
 
-  const hasFilters =
-    typeFilter !== null ||
-    modeFilter !== null ||
-    categoryFilter !== null ||
-    normalizedQuery.length > 0;
-
-  function selectType(value: FilterValue) {
-    setTypeFilter(value as JobType | null);
-    setPage(1);
-  }
-
-  function selectMode(value: FilterValue) {
-    setModeFilter(value as ModeFilter | null);
-    setPage(1);
-  }
-
-  function selectCategory(value: FilterValue) {
-    setCategoryFilter(value);
-    setPage(1);
-  }
+  const hasFilters = Boolean(search || type || remote || category);
 
   function toggleSaved(id: string) {
     setSavedIds((current) =>
@@ -433,14 +359,6 @@ export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
     );
   }
 
-  function resetFilters() {
-    setQuery("");
-    setTypeFilter(null);
-    setModeFilter(null);
-    setCategoryFilter(null);
-    setPage(1);
-  }
-
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       {/* Search */}
@@ -448,19 +366,20 @@ export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
         role="search"
         onSubmit={(event) => {
           event.preventDefault();
-          setPage(1);
+          const value = String(
+            new FormData(event.currentTarget).get("search") ?? "",
+          ).trim();
+          setParam("search", value || null);
         }}
         className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-[#111] p-3 shadow-[0_8px_40px_rgba(0,0,0,0.35)] sm:flex-row sm:items-center"
       >
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-zinc-500" />
           <input
+            key={search}
+            name="search"
             type="search"
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setPage(1);
-            }}
+            defaultValue={search}
             placeholder="Search by job title, keywords..."
             aria-label="Search jobs"
             className="h-12 w-full rounded-xl border border-white/10 bg-[#0d0d0d] pr-4 pl-11 text-sm text-white outline-none placeholder:text-zinc-600 focus-visible:border-white/30"
@@ -486,7 +405,7 @@ export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
               {hasFilters && (
                 <button
                   type="button"
-                  onClick={resetFilters}
+                  onClick={() => router.push("/browser-jobs")}
                   className="text-xs text-zinc-500 transition-colors hover:text-white"
                 >
                   Reset
@@ -498,32 +417,34 @@ export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
               <FilterGroup
                 title="Job Type"
                 name="filter-job-type"
-                value={typeFilter}
-                options={typeOptions}
-                allCount={typePool.length}
-                onChange={selectType}
+                value={type}
+                options={JOB_TYPES.map((item) => ({
+                  value: item,
+                  label: item,
+                }))}
+                onChange={(value) => setParam("type", value)}
               />
               <FilterGroup
                 title="Work Mode"
                 name="filter-work-mode"
-                value={modeFilter}
-                options={modeOptions}
-                allCount={modePool.length}
-                onChange={selectMode}
+                value={remote}
+                options={[
+                  { value: "true", label: "Remote" },
+                  { value: "false", label: "On-site" },
+                ]}
+                onChange={(value) => setParam("remote", value)}
               />
               <FilterGroup
                 title="Category"
                 name="filter-category"
-                value={categoryFilter}
-                options={categoryOptions}
-                allCount={categoryPool.length}
-                onChange={selectCategory}
+                value={category}
+                options={JOB_CATEGORIES.map((item) => ({
+                  value: item,
+                  label: item,
+                }))}
+                onChange={(value) => setParam("category", value)}
               />
             </div>
-
-            <p className="mt-5 border-t border-white/5 pt-4 text-xs text-zinc-600">
-              One option per filter — counts follow your search.
-            </p>
           </div>
         </aside>
 
@@ -543,10 +464,7 @@ export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
               <span className="relative">
                 <select
                   value={sort}
-                  onChange={(event) => {
-                    setSort(event.target.value as SortKey);
-                    setPage(1);
-                  }}
+                  onChange={(event) => setParam("sort", event.target.value)}
                   className="h-9 appearance-none rounded-lg border border-white/10 bg-[#141414] pr-9 pl-3 text-sm text-white outline-none focus-visible:border-white/30"
                 >
                   {SORT_OPTIONS.map((option) => (
@@ -562,36 +480,33 @@ export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
 
           {hasFilters && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              {normalizedQuery.length > 0 && (
+              {search && (
                 <ActiveFilter
-                  label={`“${query.trim()}”`}
-                  onClear={() => {
-                    setQuery("");
-                    setPage(1);
-                  }}
+                  label={`“${search}”`}
+                  onClear={() => setParam("search", null)}
                 />
               )}
-              {typeFilter && (
+              {type && (
                 <ActiveFilter
-                  label={typeFilter}
-                  onClear={() => selectType(null)}
+                  label={type}
+                  onClear={() => setParam("type", null)}
                 />
               )}
-              {modeFilter && (
+              {remote && (
                 <ActiveFilter
-                  label={modeFilter === "remote" ? "Remote" : "On-site"}
-                  onClear={() => selectMode(null)}
+                  label={remote === "true" ? "Remote" : "On-site"}
+                  onClear={() => setParam("remote", null)}
                 />
               )}
-              {categoryFilter && (
+              {category && (
                 <ActiveFilter
-                  label={categoryFilter}
-                  onClear={() => selectCategory(null)}
+                  label={category}
+                  onClear={() => setParam("category", null)}
                 />
               )}
               <button
                 type="button"
-                onClick={resetFilters}
+                onClick={() => router.push("/browser-jobs")}
                 className="ml-1 text-xs text-zinc-500 transition-colors hover:text-white"
               >
                 Clear all
@@ -614,7 +529,7 @@ export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
               {hasFilters && (
                 <button
                   type="button"
-                  onClick={resetFilters}
+                  onClick={() => router.push("/browser-jobs")}
                   className="mt-5 h-10 rounded-lg bg-white px-5 text-sm font-medium text-black transition-colors hover:bg-zinc-200"
                 >
                   Clear filters
@@ -642,7 +557,7 @@ export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
               <button
                 type="button"
                 aria-label="Previous page"
-                onClick={() => setPage(Math.max(1, currentPage - 1))}
+                onClick={() => goToPage(currentPage - 1)}
                 disabled={currentPage === 1}
                 className={pagerBtn}
               >
@@ -661,7 +576,7 @@ export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
                   <button
                     key={item}
                     type="button"
-                    onClick={() => setPage(item)}
+                    onClick={() => goToPage(item)}
                     aria-label={`Page ${item}`}
                     aria-current={item === currentPage ? "page" : undefined}
                     className={cn(
@@ -678,7 +593,7 @@ export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
               <button
                 type="button"
                 aria-label="Next page"
-                onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+                onClick={() => goToPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 className={pagerBtn}
               >
