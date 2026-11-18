@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Bookmark,
@@ -26,6 +26,9 @@ import {
   type RecruiterJob,
 } from "@/components/dashboard/recruiter-jobs-data";
 import Link from "next/link";
+import { authClient } from "@/lib/auth-client";
+import { getSavedJobs, removeSavedJob, saveJob } from "@/lib/actions/savedjobs";
+import { notify } from "@/components/ui/toast";
 
 const PAGE_SIZE = 5;
 
@@ -192,10 +195,12 @@ function ActiveFilter({
 function JobCard({
   job,
   saved,
+  saving,
   onToggleSaved,
 }: {
   job: RecruiterJob;
   saved: boolean;
+  saving: boolean;
   onToggleSaved: (id: string) => void;
 }) {
   const department = departmentStyles[job.icon];
@@ -228,9 +233,10 @@ function JobCard({
                   : `Save ${job.title}`
               }
               aria-pressed={saved}
+              disabled={saving}
               onClick={() => onToggleSaved(job.id)}
               className={cn(
-                "relative z-20 flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors",
+                "relative z-20 flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors disabled:opacity-50",
                 saved
                   ? "border-indigo-500/40 bg-indigo-500/15 text-indigo-300"
                   : "border-white/10 bg-[#141414] text-zinc-500 hover:border-white/20 hover:text-white",
@@ -287,7 +293,40 @@ function JobCard({
 export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data } = authClient.useSession();
+  const user = data?.user;
+  const email = user?.email;
   const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [savedOwnerEmail, setSavedOwnerEmail] = useState<string | undefined>();
+  const [savingIds, setSavingIds] = useState<string[]>([]);
+  const currentSavedIds = email === savedOwnerEmail ? savedIds : [];
+
+  useEffect(() => {
+    if (!email) return;
+
+    let active = true;
+    getSavedJobs(email)
+      .then((savedJobs) => {
+        if (active) {
+          setSavedIds(
+            savedJobs.map(({ job }) => job._id ?? job.id ?? ""),
+          );
+          setSavedOwnerEmail(email);
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          notify.error(
+            "Could not load saved jobs",
+            error instanceof Error ? error.message : "Please try again.",
+          );
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [email]);
 
   // All filter state lives in the URL, so it survives refreshes and is
   // shareable. The server page reads the same params and queries the API.
@@ -351,12 +390,39 @@ export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
 
   const hasFilters = Boolean(search || type || remote || category);
 
-  function toggleSaved(id: string) {
-    setSavedIds((current) =>
-      current.includes(id)
-        ? current.filter((item) => item !== id)
-        : [...current, id],
-    );
+  async function toggleSaved(id: string) {
+    if (!email) {
+      router.push(`/login?redirectTo=${encodeURIComponent("/browser-jobs")}`);
+      return;
+    }
+
+    if (user?.role !== "seeker") {
+      notify.error("Access denied", "Only job seekers can save jobs.");
+      return;
+    }
+
+    if (savingIds.includes(id)) return;
+    setSavingIds((current) => [...current, id]);
+
+    try {
+      const isSaved = currentSavedIds.includes(id);
+      if (isSaved) {
+        await removeSavedJob(id, email);
+        setSavedIds((current) => current.filter((savedId) => savedId !== id));
+        notify.success("Removed from saved jobs", "The job was removed from your list.");
+      } else {
+        await saveJob(id, email);
+        setSavedIds((current) => [...current, id]);
+        notify.success("Job saved", "The job was added to your saved jobs.");
+      }
+    } catch (error) {
+      notify.error(
+        "Could not update saved jobs",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    } finally {
+      setSavingIds((current) => current.filter((savingId) => savingId !== id));
+    }
   }
 
   return (
@@ -542,7 +608,8 @@ export function BrowseJobs({ jobs }: { jobs: RecruiterJob[] }) {
                 <JobCard
                   key={job.id}
                   job={job}
-                  saved={savedIds.includes(job.id)}
+                  saved={currentSavedIds.includes(job.id)}
+                  saving={savingIds.includes(job.id)}
                   onToggleSaved={toggleSaved}
                 />
               ))}

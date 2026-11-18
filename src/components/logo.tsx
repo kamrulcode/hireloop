@@ -13,11 +13,11 @@ export function Logo({
       href={href}
       className={cn(
         "font-heading text-lg font-bold tracking-tight text-white",
-        className
+        className,
       )}
     >
       hire
-      <span className="bg-gradient-to-r from-violet-400 to-sky-400 bg-clip-text text-transparent">
+      <span className="bg-linear-to-r from-violet-400 to-sky-400 bg-clip-text text-transparent">
         loop
       </span>
     </Link>

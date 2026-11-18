@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ImageIcon, Lock, Mail, User } from "lucide-react";
 import { Logo } from "@/components/logo";
@@ -66,6 +66,9 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo") ?? "/";
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
@@ -81,7 +84,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         const { error } = await authClient.signIn.email({
           email: users.email,
           password: users.password,
-          callbackURL: "/dashboard",
+          callbackURL: redirectTo,
         });
         if (error) {
           setError(error.message ?? "Sign in failed");
@@ -94,7 +97,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           password: users.password,
           image: users.image || undefined,
           role: users.role,
-          callbackURL: "/dashboard",
+          callbackURL: redirectTo,
         });
         if (error) {
           setError(error.message ?? "Sign up failed");
@@ -142,7 +145,10 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                 autoComplete="name"
               />
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="role" className="text-sm font-medium text-zinc-200">
+                <label
+                  htmlFor="role"
+                  className="text-sm font-medium text-zinc-200"
+                >
                   I am a
                 </label>
                 <select

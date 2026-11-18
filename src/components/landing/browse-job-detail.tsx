@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   Banknote,
@@ -29,6 +29,10 @@ import { cn } from "cn";
 import type { RecruiterJob } from "@/components/dashboard/recruiter-jobs-data";
 import { Breadcrumb, StatCard, card } from "@/components/dashboard/ui";
 import { notify } from "@/components/ui/toast";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import { applyToJob } from "@/lib/actions/applications";
+import { getSavedJobs, removeSavedJob, saveJob } from "@/lib/actions/savedjobs";
 
 /** Same department → icon/colour mapping the browse list uses. */
 const departmentStyles: Record<
@@ -59,7 +63,9 @@ function salaryLabel(job: RecruiterJob) {
 /** Pull "3+ years" out of the first qualification that mentions experience. */
 function experienceLabel(job: RecruiterJob) {
   for (const item of job.qualifications) {
-    const match = item.match(/(\d+)\s*(?:\+|plus)?\s*(?:-|–|to)?\s*(\d+)?\s*years?/i);
+    const match = item.match(
+      /(\d+)\s*(?:\+|plus)?\s*(?:-|–|to)?\s*(\d+)?\s*years?/i,
+    );
     if (!match) continue;
 
     return match[2] ? `${match[1]} – ${match[2]} Years` : `${match[1]}+ Years`;
@@ -117,12 +123,88 @@ const benefits = [
 
 export function BrowseJobDetail({ job }: { job: RecruiterJob }) {
   const [saved, setSaved] = useState(false);
+  const [savedOwnerEmail, setSavedOwnerEmail] = useState<string | undefined>();
+  const [saving, setSaving] = useState(false);
+  const { data } = authClient.useSession();
+  const user = data?.user;
+  const router = useRouter();
+  const email = user?.email;
+  const isSaved = email === savedOwnerEmail && saved;
+
+  useEffect(() => {
+    if (!email) return;
+
+    let active = true;
+    getSavedJobs(email)
+      .then((savedJobs) => {
+        if (active) {
+          setSaved(
+            savedJobs.some(
+              ({ job: savedJob }) =>
+                (savedJob._id ?? savedJob.id) === job.id,
+            ),
+          );
+          setSavedOwnerEmail(email);
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          notify.error(
+            "Could not load saved jobs",
+            error instanceof Error ? error.message : "Please try again.",
+          );
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [email, job.id]);
 
   const department = departmentStyles[job.icon];
   const DepartmentIcon = department.icon;
 
   const isOpen = job.status === "Active";
   const responsibilities = responsibilityBullets(job.responsibilities);
+
+  const handleToggleSaved = async () => {
+    if (!email) {
+      router.push(
+        `/login?redirectTo=${encodeURIComponent(`/browser-jobs/${job.id}`)}`,
+      );
+      return;
+    }
+
+    if (user?.role !== "seeker") {
+      notify.error("Access denied", "Only job seekers can save jobs.");
+      return;
+    }
+
+    if (saving) return;
+
+    try {
+      setSaving(true);
+      if (isSaved) {
+        await removeSavedJob(job.id, email);
+        setSaved(false);
+        notify.success(
+          "Removed from saved jobs",
+          `${job.title} is no longer in your list.`,
+        );
+      } else {
+        await saveJob(job.id, email);
+        setSaved(true);
+        notify.success("Job saved", `We saved ${job.title} for you.`);
+      }
+    } catch (error) {
+      notify.error(
+        "Could not update saved jobs",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const description = [
     `${job.company} is looking for a ${job.title} to join their ${job.category} team. This ${
@@ -131,14 +213,55 @@ export function BrowseJobDetail({ job }: { job: RecruiterJob }) {
     `You will work closely with designers, engineers, and product managers to ship work that reaches real users. The team values clear communication, small iterations, and ownership of the outcome — not just the ticket.`,
   ];
 
+  const [applying, setApplying] = useState(false);
+
+  const handleApply = async () => {
+    // 1. Check login
+    if (!user) {
+      router.push(`/login?redirectTo=/browser-jobs/${job.id}`);
+      return;
+    }
+
+    // 2. Only seekers can apply
+    if (user.role !== "seeker") {
+      notify.error("Access denied", "Only job seekers can apply for jobs.");
+      return;
+    }
+
+    // 3. Prevent multiple clicks
+    if (applying) return;
+
+    try {
+      setApplying(true);
+
+      // 4. Send only userId and jobId
+      await applyToJob({
+        userId: user.id,
+        jobId: job.id,
+      });
+
+      notify.success(
+        "Application submitted",
+        `You applied for ${job.title} successfully.`,
+      );
+
+      // 5. Navigate to applications page
+      router.push("/dashboard/seeker/applications");
+    } catch (error) {
+      notify.error(
+        "Application failed",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    } finally {
+      setApplying(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="flex items-center justify-between gap-3">
         <Breadcrumb
-          items={[
-            { label: "Browse Jobs", href: "/browser-jobs" },
-            job.title,
-          ]}
+          items={[{ label: "Browse Jobs", href: "/browser-jobs" }, job.title]}
         />
         <Link
           href="/browser-jobs"
@@ -207,39 +330,39 @@ export function BrowseJobDetail({ job }: { job: RecruiterJob }) {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              aria-label={saved ? "Remove from saved jobs" : "Save job"}
-              aria-pressed={saved}
-              onClick={() => {
-                setSaved((current) => !current);
-                notify.success(
-                  saved ? "Removed from saved jobs" : "Job saved",
-                  saved
-                    ? `${job.title} is no longer in your list.`
-                    : `We saved ${job.title} for you.`,
-                );
-              }}
+              disabled={saving}
+              aria-label={isSaved ? "Remove from saved jobs" : "Save job"}
+              aria-pressed={isSaved}
+              onClick={handleToggleSaved}
               className={cn(
-                "flex size-11 items-center justify-center rounded-lg border transition-colors",
+                "flex size-11 items-center justify-center rounded-lg border transition-colors disabled:opacity-50",
                 saved
                   ? "border-indigo-500/40 bg-indigo-500/15 text-indigo-300"
                   : "border-white/10 bg-[#141414] text-zinc-400 hover:border-white/20 hover:text-white",
               )}
             >
-              <Bookmark className={cn("size-5", saved && "fill-current")} />
+              <Bookmark className={cn("size-5", isSaved && "fill-current")} />
             </button>
 
-            <button
+            {/* <button
               type="button"
               disabled={!isOpen}
-              onClick={() =>
-                notify.info(
-                  "Applications are not connected yet",
-                  `The apply flow for ${job.title} is coming soon.`,
-                )
-              }
+              onClick={handleApply}
               className="inline-flex h-11 items-center justify-center rounded-lg bg-[#4f46e5] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#5b5bf0] disabled:pointer-events-none disabled:opacity-50"
             >
               {isOpen ? "Apply Now" : "Applications closed"}
+            </button> */}
+            <button
+              type="button"
+              disabled={!isOpen || applying}
+              onClick={handleApply}
+              className="..."
+            >
+              {applying
+                ? "Applying..."
+                : isOpen
+                  ? "Apply Now"
+                  : "Applications closed"}
             </button>
           </div>
         </div>
@@ -366,7 +489,7 @@ export function BrowseJobDetail({ job }: { job: RecruiterJob }) {
         {/* Sidebar */}
         <aside className="flex flex-col gap-6">
           <section className={cn(card, "overflow-hidden")}>
-            <div className="flex h-28 items-center justify-center bg-gradient-to-br from-indigo-500/30 via-violet-500/15 to-transparent">
+            <div className="flex h-28 items-center justify-center bg-linear-to-br from-indigo-500/30 via-violet-500/15 to-transparent">
               <span className="flex size-14 items-center justify-center rounded-xl border border-white/10 bg-[#111] text-lg font-semibold text-white">
                 {job.company.slice(0, 2).toUpperCase()}
               </span>
