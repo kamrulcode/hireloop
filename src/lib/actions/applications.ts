@@ -39,7 +39,9 @@ export async function applyToJob(data: ApplicationData) {
   return result;
 }
 
-export async function getMyApplications(userId: string) {
+export async function getMyApplications(
+  userId: string,
+): Promise<MyApplication[]> {
   const response = await fetch(
     `${BASE_URL}/applications?userId=${encodeURIComponent(userId)}`,
     { cache: "no-store" },
@@ -49,5 +51,10 @@ export async function getMyApplications(userId: string) {
     throw new Error("Failed to load applications");
   }
 
-  return response.json();
+  const result: unknown = await response.json();
+  if (!Array.isArray(result)) {
+    throw new Error("The applications API returned an invalid response");
+  }
+
+  return result as MyApplication[];
 }

@@ -31,7 +31,7 @@ import { Breadcrumb, StatCard, card } from "@/components/dashboard/ui";
 import { notify } from "@/components/ui/toast";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { applyToJob } from "@/lib/actions/applications";
+import { applyToJob, getMyApplications } from "@/lib/actions/applications";
 import { getSavedJobs, removeSavedJob, saveJob } from "@/lib/actions/savedjobs";
 
 /** Same department → icon/colour mapping the browse list uses. */
@@ -121,6 +121,8 @@ const benefits = [
   },
 ];
 
+const FREE_APPLICATION_LIMIT = 5;
+
 export function BrowseJobDetail({ job }: { job: RecruiterJob }) {
   const [saved, setSaved] = useState(false);
   const [savedOwnerEmail, setSavedOwnerEmail] = useState<string | undefined>();
@@ -140,8 +142,7 @@ export function BrowseJobDetail({ job }: { job: RecruiterJob }) {
         if (active) {
           setSaved(
             savedJobs.some(
-              ({ job: savedJob }) =>
-                (savedJob._id ?? savedJob.id) === job.id,
+              ({ job: savedJob }) => (savedJob._id ?? savedJob.id) === job.id,
             ),
           );
           setSavedOwnerEmail(email);
@@ -234,7 +235,20 @@ export function BrowseJobDetail({ job }: { job: RecruiterJob }) {
     try {
       setApplying(true);
 
-      // 4. Send only userId and jobId
+      const applications = await getMyApplications(user.id);
+      if (applications.some((application) => application.job?._id === job.id)) {
+        notify.info(
+          "Already applied",
+          `You have already applied for ${job.title}.`,
+        );
+        return;
+      }
+
+      if (applications.length >= FREE_APPLICATION_LIMIT) {
+        router.push("/checkout");
+        return;
+      }
+
       await applyToJob({
         userId: user.id,
         jobId: job.id,
@@ -246,7 +260,7 @@ export function BrowseJobDetail({ job }: { job: RecruiterJob }) {
       );
 
       // 5. Navigate to applications page
-      router.push("/dashboard/seeker/applications");
+      router.push("/applications");
     } catch (error) {
       notify.error(
         "Application failed",
